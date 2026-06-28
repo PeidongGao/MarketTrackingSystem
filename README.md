@@ -90,13 +90,26 @@ re-checks those values and records a **Data Validation** section per ticker:
 
 ## Automation
 
-Two GitHub Actions workflows under `.github/workflows/`:
+Two GitHub Actions definitions ship in [`ci/`](ci/):
 
-- **`tests.yml`** — runs the unit tests on every push / PR.
-- **`weekly-report.yml`** — runs every Saturday 13:00 UTC (after Friday's
+- **`ci/tests.yml`** — runs the unit tests on every push / PR.
+- **`ci/weekly-report.yml`** — runs every Saturday 13:00 UTC (after Friday's
   close), generates the cross-validated report with `--strict`, and commits the
   new `reports/weekly/<date>.md` and updated `reports/history.csv`. Can also be
   run manually (`workflow_dispatch`) for a specific `week_ending`.
+
+To activate them, move both into `.github/workflows/` — either through the
+GitHub web UI (**Add file → Create new file**), or locally with a token that
+carries the `workflow` scope:
+
+```bash
+gh auth refresh -h github.com -s workflow      # one-time scope grant
+mkdir -p .github/workflows && git mv ci/*.yml .github/workflows/
+git commit -m "Enable CI workflows" && git push
+```
+
+GitHub requires the `workflow` scope to create files under `.github/workflows/`,
+which is why they ship in `ci/` by default.
 
 ## Test
 
