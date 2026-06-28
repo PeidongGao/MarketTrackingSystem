@@ -2,9 +2,10 @@
 
 A small **weekly** market report generator for `VOO`, `QQQ`, and `SMH`.
 
-It pulls Yahoo Finance daily data only, builds a Markdown report of each
-ticker's weekly close, 52-week range, drawdown (DD), and week-over-week (WoW)
-change, and validates the report before writing it.
+It pulls Yahoo Finance daily data for every reported value, builds a Markdown
+report of each ticker's weekly close, 52-week range, drawdown (DD), and
+week-over-week (WoW) change, and cross-validates the numbers against an
+independent source before writing them.
 
 ## Setup
 
@@ -38,7 +39,8 @@ Useful flags:
 | `--tickers VOO QQQ ...` | Override the ticker list. |
 | `--basis close\|intraday` | 52-week range basis (default `close`). |
 | `--history FILE` / `--no-history` | Append to / skip the time-series at `reports/history.csv`. |
-| `--no-validate` | Skip cross-validation. |
+| `--no-validate` | Skip all validation. |
+| `--no-verify` | Skip only the independent second-source cross-check. |
 | `--strict` | Exit non-zero if any validation check is a **mismatch**. |
 
 ## Metrics
@@ -53,21 +55,29 @@ are the max/min of daily *closes* over the trailing 365 days — intraday spikes
 are deliberately ignored, matching the project rule "do not use intraday moves."
 Pass `--basis intraday` to instead match the range shown on the Yahoo website.
 
-## Usage Boundaries
+## Disclaimer
 
-This repository is intended for low-volume, user-initiated weekly market review.
-It is not designed for high-frequency trading, automated market scraping,
-investment execution, or bulk redistribution of financial data.
+This tool is for **low-volume, user-initiated** weekly market review only — not
+high-frequency trading, automated scraping, investment execution, or bulk
+redistribution of data. It provides **no investment, financial, tax, legal, or
+trading advice**, and is **not affiliated with** Yahoo, any exchange, or any ETF
+issuer.
 
-This project does not provide investment, financial, tax, legal, or trading
-advice. Read [DISCLAIMER.md](DISCLAIMER.md) before using or publishing generated
-reports.
+Read the full **[DISCLAIMER.md](DISCLAIMER.md)** before using or publishing
+generated reports.
 
 ## Cross-validation
 
-Each run records a **Data Validation** section per ticker. Checks:
+Yahoo Finance produces every **reported** value. Each run independently
+re-checks those values and records a **Data Validation** section per ticker:
 
-- **Close & previous-week close** resolved from Yahoo Finance daily chart data.
+- **Close & previous-week close** are confirmed against an independent source,
+  [stockanalysis.com](https://stockanalysis.com) (raw close, so dividend
+  adjustments don't cause false alarms). Two sources agreeing within 0.1% →
+  `confirmed`; a disagreement → `mismatch`. The second source is used **only**
+  to verify — it never populates the report, and a run is **not** failed merely
+  because it is unreachable (then the check degrades to `single-source`).
+  Disable it with `--no-verify`.
 - **52-week range** is shown on every basis (`close`, `intraday`, Yahoo `meta`)
   so the reported figure is auditable. A `freshness` advisory fires when Yahoo's
   published 52-week extreme drifts from the trailing-window value (stale meta).
@@ -125,8 +135,7 @@ git push origin main
 
 ## Attribution
 
-This is a WillGaoLab project created and maintained by
-William (Peidong) Gao.
+A **WillGaoLab** project, created and maintained by **William (Peidong) Gao**.
 
 - Project website: <https://williampeidonggao.com>
 - Brand: <https://github.com/WillGaoLab>
@@ -134,29 +143,29 @@ William (Peidong) Gao.
 
 ```text
 William (Peidong) Gao
-        |
-    WillGaoLab
-        |
-Open-source Projects
-        |
-MarketTrackingSystem
+        │
+     WillGaoLab
+        │
+ Open-source projects
+        │
+ MarketTrackingSystem
 ```
 
-## Affiliation Disclaimer
+## Affiliation
 
-This project is not affiliated with, endorsed by, sponsored by, or officially
-associated with Yahoo, Yahoo Finance, Vanguard, Invesco, VanEck, Nasdaq, NYSE,
-Cboe, any exchange, any ETF issuer, or any other company, organization, fund,
-index provider, or service referenced in this repository.
+Not affiliated with, endorsed by, or sponsored by Yahoo, Yahoo Finance,
+stockanalysis.com, Vanguard, Invesco, VanEck, Nasdaq, NYSE, Cboe, any exchange,
+any ETF issuer, or any other entity referenced here. All trademarks, ticker symbols, fund names,
+and data-provider names are the property of their respective owners and are used
+for identification only.
 
-All trademarks, service marks, ticker symbols, fund names, logos, company
-names, exchange names, and data-provider names are the property of their
-respective owners and are used solely for identification and descriptive
-purposes.
+Full text: [DISCLAIMER.md → Affiliation Disclaimer](DISCLAIMER.md#affiliation-disclaimer).
 
 ## License
 
-Original code and documentation in this repository are available under the
-[MIT License](LICENSE). The license does not apply to third-party data,
-metadata, names, logos, trademarks, ticker symbols, fund names, or exchange
-market data.
+Original code and documentation: **[MIT License](LICENSE)** © 2026 William Gao.
+
+The MIT grant covers this project's own source and documentation only. It does
+**not** extend to third-party data, market data, metadata, or any names, logos,
+trademarks, ticker symbols, or fund names referenced here — those remain the
+property of their respective owners.

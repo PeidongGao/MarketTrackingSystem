@@ -4,7 +4,9 @@ Last reviewed: June 28, 2026
 
 This repository provides a small weekly reporting tool for retrieving and
 summarizing publicly available market data from Yahoo Finance for personal
-tracking and review.
+tracking and review. All reported values come from Yahoo Finance; a second
+public source (stockanalysis.com) is queried only to independently cross-check
+those values and is never used to populate a report.
 
 The tool is intended for low-volume, user-initiated weekly use. It is not
 designed for high-frequency trading, automated market scraping, investment
@@ -51,9 +53,9 @@ presentation through WilliamGaoWeb.
 ## Affiliation Disclaimer
 
 This project is not affiliated with, endorsed by, sponsored by, or officially
-associated with Yahoo, Yahoo Finance, Vanguard, Invesco, VanEck, Nasdaq, NYSE,
-Cboe, any exchange, any ETF issuer, or any other company, organization, fund,
-index provider, or service referenced in this repository.
+associated with Yahoo, Yahoo Finance, stockanalysis.com, Vanguard, Invesco,
+VanEck, Nasdaq, NYSE, Cboe, any exchange, any ETF issuer, or any other company,
+organization, fund, index provider, or service referenced in this repository.
 
 All trademarks, service marks, ticker symbols, fund names, logos, company
 names, exchange names, and data-provider names are the property of their

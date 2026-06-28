@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from datetime import date, datetime
 from pathlib import Path
 
@@ -12,9 +13,11 @@ from market_tracking.config import (
     HISTORY_PATH,
     TIMEZONE,
 )
+from market_tracking import stockanalysis
 from market_tracking.history import append_report, latest_prior_week
 from market_tracking.models import TickerReport, ValidationReport
 from market_tracking.report import build_ticker_report, render_report
+from market_tracking.sources import SourceUnavailable
 from market_tracking.validate import cross_validate_ticker
 from market_tracking.yahoo import SOURCE_LABEL as YAHOO_SOURCE, fetch_market_data
 
@@ -35,7 +38,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     report.add_argument("--basis", choices=("close", "intraday"), default=FIFTY_TWO_WEEK_BASIS)
     report.add_argument("--history", type=Path, default=HISTORY_PATH)
     report.add_argument("--no-history", action="store_true", help="Do not read/write history.")
-    report.add_argument("--no-validate", action="store_true", help="Skip cross-validation.")
+    report.add_argument("--no-validate", action="store_true", help="Skip all validation.")
+    report.add_argument(
+        "--no-verify",
+        action="store_true",
+        help="Skip the independent second-source (stockanalysis.com) cross-check.",
+    )
     report.add_argument(
         "--strict",
         action="store_true",
@@ -56,7 +64,19 @@ def run_report(args: argparse.Namespace) -> int:
 
     for ticker in args.tickers:
         primary = fetch_market_data(ticker)
-        yahoo_only = {YAHOO_SOURCE: primary}
+        per_source = {YAHOO_SOURCE: primary}
+
+        # Independent verification source: confirms Yahoo's reported numbers but
+        # never populates the report, and never fails the run if unreachable.
+        if not args.no_validate and not args.no_verify:
+            try:
+                per_source[stockanalysis.SOURCE_LABEL] = stockanalysis.fetch_market_data(ticker)
+            except SourceUnavailable as error:
+                print(
+                    f"  note: verification source unavailable for {ticker}: {error}",
+                    file=sys.stderr,
+                )
+
         report = build_ticker_report(
             ticker,
             primary.bars,
@@ -75,7 +95,7 @@ def run_report(args: argparse.Namespace) -> int:
             validations[report.ticker] = cross_validate_ticker(
                 report,
                 week_ending,
-                yahoo_only,
+                per_source,
                 basis=args.basis,
                 tolerance=CROSS_SOURCE_TOLERANCE,
                 history_prev_close=prior,

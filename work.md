@@ -4,7 +4,7 @@ Method: design and test on mac, the upload to github as a indepentedt project
 OverallDesignReference=/Users/peidong/Library/Mobile\ Documents/iCloud\~md\~obsidian/Documents/WillGaoLab/04.Investing/SGOV_Dip_Buying_Plan_2026-06-22.md
 
 Frequency: Weekly
-Data source: Yahoo Finance only
+Data source: Yahoo Finance for all reported values. stockanalysis.com is used only to cross-check (verify) the reported closes — it never populates the report and never blocks a run if unavailable.
 Timing: Report every Saturday. Use the final weekly market data after the close of the week’s last trading day — normally Friday after market close, or the last trading day of the week if Friday is not a trading day.
 Tickers: VOO, QQQ, SMH
 
