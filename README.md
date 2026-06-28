@@ -53,6 +53,16 @@ are the max/min of daily *closes* over the trailing 365 days — intraday spikes
 are deliberately ignored, matching the project rule "do not use intraday moves."
 Pass `--basis intraday` to instead match the range shown on the Yahoo website.
 
+## Usage Boundaries
+
+This repository is intended for low-volume, user-initiated weekly market review.
+It is not designed for high-frequency trading, automated market scraping,
+investment execution, or bulk redistribution of financial data.
+
+This project does not provide investment, financial, tax, legal, or trading
+advice. Read [DISCLAIMER.md](DISCLAIMER.md) before using or publishing generated
+reports.
+
 ## Cross-validation
 
 Each run records a **Data Validation** section per ticker. Checks:
@@ -84,6 +94,18 @@ Two GitHub Actions workflows under `.github/workflows/`:
 PYTHONPATH=src python -m unittest discover -s tests
 ```
 
+## Repository Strategy
+
+- Canonical code repository:
+  <https://github.com/PeidongGao/MarketTrackingSystem>
+- WillGaoLab brand:
+  <https://github.com/WillGaoLab>
+- WilliamGaoWeb project display:
+  <https://github.com/PeidongGao/WilliamGaoWeb>
+
+The canonical repository is maintained through William Gao's personal GitHub
+account. WillGaoLab is a separate public-facing brand.
+
 ## Publishing Workflow
 
 Before editing:
@@ -100,3 +122,41 @@ git add .
 git commit -m "Describe the market tracking update"
 git push origin main
 ```
+
+## Attribution
+
+This is a WillGaoLab project created and maintained by
+William (Peidong) Gao.
+
+- Project website: <https://williampeidonggao.com>
+- Brand: <https://github.com/WillGaoLab>
+- Personal GitHub: <https://github.com/PeidongGao>
+
+```text
+William (Peidong) Gao
+        |
+    WillGaoLab
+        |
+Open-source Projects
+        |
+MarketTrackingSystem
+```
+
+## Affiliation Disclaimer
+
+This project is not affiliated with, endorsed by, sponsored by, or officially
+associated with Yahoo, Yahoo Finance, Vanguard, Invesco, VanEck, Nasdaq, NYSE,
+Cboe, any exchange, any ETF issuer, or any other company, organization, fund,
+index provider, or service referenced in this repository.
+
+All trademarks, service marks, ticker symbols, fund names, logos, company
+names, exchange names, and data-provider names are the property of their
+respective owners and are used solely for identification and descriptive
+purposes.
+
+## License
+
+Original code and documentation in this repository are available under the
+[MIT License](LICENSE). The license does not apply to third-party data,
+metadata, names, logos, trademarks, ticker symbols, fund names, or exchange
+market data.
