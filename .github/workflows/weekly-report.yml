@@ -2,12 +2,12 @@ name: weekly-report
 
 on:
   schedule:
-    # 13:00 UTC every Saturday (~09:00 ET) — Friday's weekly close is final by then.
+    # 13:00 UTC every Saturday — Friday's weekly close is final by then.
     - cron: "0 13 * * 6"
   workflow_dispatch:
     inputs:
       week_ending:
-        description: "Optional ISO date (YYYY-MM-DD) to (re)generate a specific week."
+        description: "Optional completed calendar Friday (YYYY-MM-DD)."
         required: false
         type: string
 
@@ -27,16 +27,19 @@ jobs:
         run: python -m pip install -e .
 
       - name: Generate weekly report (cross-validated)
+        env:
+          WEEK_ENDING: ${{ inputs.week_ending }}
         run: |
-          WEEK_ARG=""
-          if [ -n "${{ github.event.inputs.week_ending }}" ]; then
-            WEEK_ARG="--week-ending ${{ github.event.inputs.week_ending }}"
-          fi
-          PYTHONPATH=src python -m market_tracking.cli report \
-            $WEEK_ARG \
-            --output-dir reports/weekly \
-            --history reports/history.csv \
+          args=(
+            report
+            --output-dir reports/weekly
+            --history reports/history.csv
             --strict
+          )
+          if [[ -n "$WEEK_ENDING" ]]; then
+            args+=(--week-ending "$WEEK_ENDING")
+          fi
+          PYTHONPATH=src python -m market_tracking.cli "${args[@]}"
 
       - name: Commit report if changed
         run: |

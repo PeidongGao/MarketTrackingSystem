@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import time
-from datetime import datetime, time as dtime
+from datetime import date, datetime, time as dtime
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -31,13 +31,29 @@ def _get(url: str, attempts: int = 2, timeout: int = 20) -> dict:
     raise SourceUnavailable(f"stockanalysis request failed: {last_error}")
 
 
-def fetch_market_data(ticker: str, range_: str = "1M") -> MarketData:
+def fetch_market_data(
+    ticker: str,
+    range_: str | None = None,
+    *,
+    as_of: date | None = None,
+) -> MarketData:
     """Fetch recent daily bars from stockanalysis.com (verification only).
 
     Tries the ETF path ("e") then the stock path ("s"). A short range is enough
     because this source is used only to confirm the latest and previous-week
     closes, never to compute the 52-week range.
     """
+    if range_ is None:
+        age_days = 0 if as_of is None else (datetime.now(TIMEZONE).date() - as_of).days
+        if age_days <= 31:
+            range_ = "1M"
+        elif age_days <= 365:
+            range_ = "1Y"
+        elif age_days <= 365 * 5:
+            range_ = "5Y"
+        else:
+            range_ = "Max"
+
     rows: list[dict] | None = None
     last_error: Exception | None = None
     for kind in ("e", "s"):

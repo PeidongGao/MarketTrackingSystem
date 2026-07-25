@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from dataclasses import replace
 import unittest
 
 from market_tracking.models import DailyBar, MarketData
@@ -8,6 +9,7 @@ from market_tracking.validate import cross_validate_ticker
 
 def bars(close_2618: float, close_2626: float) -> list[DailyBar]:
     return [
+        DailyBar(date(2025, 6, 10), 110, 115, 105, datetime(2025, 6, 10, 16)),
         DailyBar(date(2026, 6, 12), 120, 125, 118, datetime(2026, 6, 12, 16)),
         DailyBar(date(2026, 6, 18), close_2618, close_2618, close_2618, datetime(2026, 6, 18, 16)),
         DailyBar(date(2026, 6, 26), close_2626, close_2626, close_2626, datetime(2026, 6, 26, 16)),
@@ -16,7 +18,9 @@ def bars(close_2618: float, close_2626: float) -> list[DailyBar]:
 
 class ValidateTest(unittest.TestCase):
     def _report(self):
-        return build_ticker_report("VOO", bars(100, 110), date(2026, 6, 26))
+        return build_ticker_report(
+            "VOO", bars(100, 110), date(2026, 6, 26), basis="close"
+        )
 
     def _check(self, validation, field):
         return next(c for c in validation.checks if c.field == field)
@@ -78,18 +82,53 @@ class ValidateTest(unittest.TestCase):
             self._report(), date(2026, 6, 26), per_source, basis="close", tolerance=0.001
         )
 
-        self.assertEqual(self._check(validation, "52-week high").values["yahoo_meta"], 125.0)
+        definitions = self._check(validation, "52-week range definitions")
+        self.assertEqual(definitions.values["yahoo_meta_high"], 125.0)
 
     def test_friday_holiday_resolved_to_thursday_is_confirmed(self) -> None:
         per_source = {"yahoo": MarketData(bars(100, 110), source="yahoo")}
-        report = build_ticker_report("VOO", bars(100, 110), date(2026, 6, 19))
+        report = build_ticker_report(
+            "VOO", bars(100, 110), date(2026, 6, 19), basis="close"
+        )
         validation = cross_validate_ticker(
             report, date(2026, 6, 19), per_source, basis="close", tolerance=0.001
         )
 
-        self.assertEqual(report.week_ending, date(2026, 6, 18))
+        self.assertEqual(report.week_ending, date(2026, 6, 19))
+        self.assertEqual(report.close_date, date(2026, 6, 18))
         self.assertTrue(validation.ok)
         self.assertEqual(self._check(validation, "reporting week").status, "confirmed")
+
+    def test_reported_range_mismatch_is_a_failure(self) -> None:
+        per_source = {"yahoo": MarketData(bars(100, 110), source="yahoo")}
+        broken = replace(self._report(), fifty_two_week_high=999.0)
+        validation = cross_validate_ticker(
+            broken, date(2026, 6, 26), per_source, basis="close", tolerance=0.001
+        )
+
+        self.assertFalse(validation.ok)
+        self.assertEqual(
+            self._check(validation, "52-week high (close)").status, "mismatch"
+        )
+
+    def test_secondary_displayed_range_mismatch_is_a_failure(self) -> None:
+        per_source = {"yahoo": MarketData(bars(100, 110), source="yahoo")}
+        report = build_ticker_report(
+            "VOO", bars(100, 110), date(2026, 6, 26), basis="intraday"
+        )
+        broken = replace(report, fifty_two_week_close_low=999.0)
+        validation = cross_validate_ticker(
+            broken,
+            date(2026, 6, 26),
+            per_source,
+            basis="intraday",
+            tolerance=0.001,
+        )
+
+        self.assertFalse(validation.ok)
+        self.assertEqual(
+            self._check(validation, "52-week closing low").status, "mismatch"
+        )
 
 
 if __name__ == "__main__":

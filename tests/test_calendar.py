@@ -1,7 +1,11 @@
 from datetime import date, datetime
 import unittest
 
-from market_tracking.calendar import latest_completed_week_ending, select_weekly_closes
+from market_tracking.calendar import (
+    latest_completed_week_ending,
+    select_weekly_closes,
+    validate_completed_week_ending,
+)
 from market_tracking.models import DailyBar
 
 
@@ -30,3 +34,9 @@ class CalendarTest(unittest.TestCase):
 
         self.assertEqual(current.date, date(2026, 6, 25))
         self.assertEqual(previous.date, date(2026, 6, 18))
+
+    def test_rejects_unfinished_or_non_friday_week(self) -> None:
+        with self.assertRaisesRegex(ValueError, "must be a Friday"):
+            validate_completed_week_ending(date(2026, 6, 25), date(2026, 6, 27))
+        with self.assertRaisesRegex(ValueError, "is not complete"):
+            validate_completed_week_ending(date(2026, 7, 3), date(2026, 7, 2))

@@ -19,9 +19,8 @@ Data time:
 
 Close price:
 
-52-week low:
-52-week high:
-52-week range:
+52-week range (Yahoo/intraday):
+52-week closing range:
 
 Previous week close date:
 Previous week close price:
@@ -87,7 +86,6 @@ Previous week close price: 659.88
 | DD     | Drawdown from 52-week high | Current Price ÷ 52W High − 1            |
 | WoW    | Week-over-week change      | Current Price ÷ Previous Week Price − 1 |
 
-Use closing prices or weekend review prices.
-
-Do not use intraday price moves.
-
+Use closing prices for the weekly close and WoW. Display both 52-week range
+definitions explicitly. Use Yahoo's intraday range as the standard range and
+default DD denominator; `--basis close` remains available for a close-only DD.

@@ -14,6 +14,20 @@ def latest_completed_week_ending(today: date) -> date:
     return friday
 
 
+def validate_completed_week_ending(requested: date, today: date) -> None:
+    """Require a calendar Friday whose reporting week has fully completed."""
+    if requested.weekday() != 4:
+        raise ValueError(
+            f"Week ending must be a Friday; received {requested.isoformat()}."
+        )
+    latest = latest_completed_week_ending(today)
+    if requested > latest:
+        raise ValueError(
+            f"Week ending {requested.isoformat()} is not complete; "
+            f"latest completed week is {latest.isoformat()}."
+        )
+
+
 def select_weekly_closes(
     bars: list[DailyBar], requested_week_ending: date
 ) -> tuple[DailyBar, DailyBar]:

@@ -29,6 +29,15 @@ def _cross_source_check(
     return FieldCheck(field, values, "mismatch", "sources disagree beyond tolerance")
 
 
+def _calculation_check(
+    field: str, reported: float, recomputed: float, tolerance: float
+) -> FieldCheck:
+    values = {"reported": reported, "recomputed": recomputed}
+    if _agree([reported, recomputed], tolerance):
+        return FieldCheck(field, values, "confirmed", "matches raw-bar recomputation")
+    return FieldCheck(field, values, "mismatch", "does not match raw-bar recomputation")
+
+
 def cross_validate_ticker(
     primary_report: TickerReport,
     requested_week_ending: date,
@@ -53,35 +62,74 @@ def cross_validate_ticker(
     checks.append(_cross_source_check("close price", closes, tolerance))
     checks.append(_cross_source_check("previous-week close", prev_closes, tolerance))
 
-    # --- 52-week range: surface every basis so the reported value is auditable.
+    # --- 52-week range: recompute the selected basis and make it strict.
     primary = per_source_data.get(YAHOO_SOURCE) or next(iter(per_source_data.values()))
-    as_of = primary_report.week_ending
+    as_of = primary_report.close_date
     close_low, close_high = fifty_two_week_range(primary.bars, as_of, basis="close")
     intra_low, intra_high = fifty_two_week_range(primary.bars, as_of, basis="intraday")
+    expected_low, expected_high = (
+        (close_low, close_high) if basis == "close" else (intra_low, intra_high)
+    )
     checks.append(
-        FieldCheck(
-            "52-week high",
-            {
-                "reported": primary_report.fifty_two_week_high,
-                "close": close_high,
-                "intraday": intra_high,
-                "yahoo_meta": primary.fifty_two_week_high,
-            },
-            "advisory",
-            f"reported on '{basis}' basis; values differ by definition",
+        _calculation_check(
+            f"52-week high ({basis})",
+            primary_report.fifty_two_week_high,
+            expected_high,
+            tolerance,
+        )
+    )
+    checks.append(
+        _calculation_check(
+            f"52-week low ({basis})",
+            primary_report.fifty_two_week_low,
+            expected_low,
+            tolerance,
+        )
+    )
+    for label, reported, recomputed in (
+        ("52-week closing high", primary_report.fifty_two_week_close_high, close_high),
+        ("52-week closing low", primary_report.fifty_two_week_close_low, close_low),
+        (
+            "52-week intraday high",
+            primary_report.fifty_two_week_intraday_high,
+            intra_high,
+        ),
+        (
+            "52-week intraday low",
+            primary_report.fifty_two_week_intraday_low,
+            intra_low,
+        ),
+    ):
+        checks.append(_calculation_check(label, reported, recomputed, tolerance))
+    checks.append(
+        _calculation_check(
+            f"drawdown ({basis})",
+            primary_report.drawdown,
+            primary_report.close_price / expected_high - 1,
+            tolerance,
+        )
+    )
+    checks.append(
+        _calculation_check(
+            "week-over-week calculation",
+            primary_report.week_over_week,
+            primary_report.close_price / primary_report.previous_week_close_price - 1,
+            tolerance,
         )
     )
     checks.append(
         FieldCheck(
-            "52-week low",
+            "52-week range definitions",
             {
-                "reported": primary_report.fifty_two_week_low,
-                "close": close_low,
-                "intraday": intra_low,
-                "yahoo_meta": primary.fifty_two_week_low,
+                "close_low": close_low,
+                "close_high": close_high,
+                "intraday_low": intra_low,
+                "intraday_high": intra_high,
+                "yahoo_meta_low": primary.fifty_two_week_low,
+                "yahoo_meta_high": primary.fifty_two_week_high,
             },
             "advisory",
-            f"reported on '{basis}' basis; values differ by definition",
+            "close and intraday values differ by definition",
         )
     )
 
@@ -113,9 +161,9 @@ def cross_validate_ticker(
     requested_week_start = requested_week_ending - timedelta(
         days=requested_week_ending.weekday()
     )
-    if requested_week_start <= primary_report.week_ending <= requested_week_ending:
+    if requested_week_start <= primary_report.close_date <= requested_week_ending:
         checks.append(
-            FieldCheck("reporting week", {}, "confirmed", f"resolved to {primary_report.week_ending}")
+            FieldCheck("reporting week", {}, "confirmed", f"resolved to {primary_report.close_date}")
         )
     else:
         checks.append(
@@ -123,7 +171,7 @@ def cross_validate_ticker(
                 "reporting week",
                 {},
                 "mismatch",
-                f"requested {requested_week_ending} but resolved to {primary_report.week_ending}",
+                f"requested {requested_week_ending} but resolved to {primary_report.close_date}",
             )
         )
 

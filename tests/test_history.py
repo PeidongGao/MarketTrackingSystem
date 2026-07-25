@@ -13,10 +13,16 @@ def report(week_ending: date, close: float) -> TickerReport:
         source="Yahoo Finance",
         source_url="https://finance.yahoo.com/quote/VOO/",
         week_ending=week_ending,
+        close_date=week_ending,
         data_time=datetime(week_ending.year, week_ending.month, week_ending.day, 16),
         close_price=close,
         fifty_two_week_low=500.0,
         fifty_two_week_high=700.0,
+        fifty_two_week_close_low=505.0,
+        fifty_two_week_close_high=695.0,
+        fifty_two_week_intraday_low=500.0,
+        fifty_two_week_intraday_high=700.0,
+        range_basis="intraday",
         previous_week_close_date=date(2026, 6, 18),
         previous_week_close_price=688.11,
         drawdown=-0.04,
@@ -45,6 +51,8 @@ class HistoryTest(unittest.TestCase):
             rows = load_history(path)
             self.assertEqual(len(rows), 1)
             self.assertEqual(rows[0]["close"], "671.00")
+            self.assertEqual(rows[0]["intraday_52w_high"], "700.00")
+            self.assertEqual(rows[0]["dd_basis"], "intraday")
 
     def test_no_prior_week_returns_none(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

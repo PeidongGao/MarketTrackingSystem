@@ -1,7 +1,12 @@
 from datetime import date, datetime
 import unittest
 
-from market_tracking.metrics import drawdown, fifty_two_week_range, week_over_week
+from market_tracking.metrics import (
+    drawdown,
+    fifty_two_week_range,
+    validate_window_coverage,
+    week_over_week,
+)
 from market_tracking.models import DailyBar
 
 
@@ -35,3 +40,19 @@ class MetricsTest(unittest.TestCase):
         ]
         low, high = fifty_two_week_range(bars, date(2026, 6, 26), basis="close")
         self.assertEqual((low, high), (200, 210))
+
+    def test_window_coverage_rejects_partial_history(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Incomplete 365-day history"):
+            validate_window_coverage(
+                [bar(date(2026, 1, 2), 100, 101, 99)],
+                date(2026, 6, 26),
+            )
+
+    def test_window_coverage_accepts_bar_before_boundary(self) -> None:
+        validate_window_coverage(
+            [
+                bar(date(2025, 6, 20), 100, 101, 99),
+                bar(date(2026, 6, 26), 110, 111, 109),
+            ],
+            date(2026, 6, 26),
+        )

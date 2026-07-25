@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from datetime import date, datetime
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
-from market_tracking.calendar import latest_completed_week_ending
+from market_tracking.calendar import (
+    latest_completed_week_ending,
+    validate_completed_week_ending,
+)
 from market_tracking.config import (
     CROSS_SOURCE_TOLERANCE,
     DEFAULT_TICKERS,
@@ -14,7 +19,7 @@ from market_tracking.config import (
     TIMEZONE,
 )
 from market_tracking import stockanalysis
-from market_tracking.history import append_report, latest_prior_week
+from market_tracking.history import latest_prior_week, upsert_reports
 from market_tracking.models import TickerReport, ValidationReport
 from market_tracking.report import build_ticker_report, render_report
 from market_tracking.sources import SourceUnavailable
@@ -35,7 +40,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Directory to write '<week-ending>.md' into (filename derived automatically).",
     )
     report.add_argument("--tickers", nargs="+", default=list(DEFAULT_TICKERS))
-    report.add_argument("--basis", choices=("close", "intraday"), default=FIFTY_TWO_WEEK_BASIS)
+    report.add_argument(
+        "--basis",
+        choices=("close", "intraday"),
+        default=FIFTY_TWO_WEEK_BASIS,
+        help="52-week high basis used for DD; both ranges are always displayed.",
+    )
     report.add_argument("--history", type=Path, default=HISTORY_PATH)
     report.add_argument("--no-history", action="store_true", help="Do not read/write history.")
     report.add_argument("--no-validate", action="store_true", help="Skip all validation.")
@@ -53,9 +63,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def run_report(args: argparse.Namespace) -> int:
-    week_ending = args.week_ending or latest_completed_week_ending(
-        datetime.now(TIMEZONE).date()
-    )
+    today = datetime.now(TIMEZONE).date()
+    week_ending = args.week_ending or latest_completed_week_ending(today)
+    validate_completed_week_ending(week_ending, today)
     generated_at = datetime.now(TIMEZONE)
     history_path: Path | None = None if args.no_history else args.history
 
@@ -63,14 +73,16 @@ def run_report(args: argparse.Namespace) -> int:
     validations: dict[str, ValidationReport] = {}
 
     for ticker in args.tickers:
-        primary = fetch_market_data(ticker)
+        primary = fetch_market_data(ticker, as_of=week_ending)
         per_source = {YAHOO_SOURCE: primary}
 
         # Independent verification source: confirms Yahoo's reported numbers but
         # never populates the report, and never fails the run if unreachable.
         if not args.no_validate and not args.no_verify:
             try:
-                per_source[stockanalysis.SOURCE_LABEL] = stockanalysis.fetch_market_data(ticker)
+                per_source[stockanalysis.SOURCE_LABEL] = stockanalysis.fetch_market_data(
+                    ticker, as_of=week_ending
+                )
             except SourceUnavailable as error:
                 print(
                     f"  note: verification source unavailable for {ticker}: {error}",
@@ -102,37 +114,61 @@ def run_report(args: argparse.Namespace) -> int:
             )
 
     rendered = render_report(reports, validations or None, generated_at)
-    resolved_week_ending = reports[0].week_ending if reports else week_ending
     output = args.output or (
-        args.output_dir / f"{resolved_week_ending.isoformat()}.md" if args.output_dir else None
+        args.output_dir / f"{week_ending.isoformat()}.md" if args.output_dir else None
     )
+
+    mismatched = [
+        f"{ticker}: {', '.join(c.field for c in validation.mismatches)}"
+        for ticker, validation in validations.items()
+        if not validation.ok
+    ]
+    if mismatched:
+        print("VALIDATION MISMATCH -> " + "; ".join(mismatched), file=sys.stderr)
+        if args.strict:
+            if output is None:
+                print(rendered, end="")
+            return 1
+
     if output:
-        output.parent.mkdir(parents=True, exist_ok=True)
-        output.write_text(rendered, encoding="utf-8")
+        _atomic_write_text(output, rendered)
         print(f"Wrote {output}")
     else:
         print(rendered, end="")
 
     if history_path is not None:
-        for report in reports:
-            append_report(history_path, report, args.basis, generated_at)
-
-    mismatched = [
-        f"{ticker}: {', '.join(c.field for c in v.mismatches)}"
-        for ticker, v in validations.items()
-        if not v.ok
-    ]
-    if mismatched:
-        print("VALIDATION MISMATCH -> " + "; ".join(mismatched), file=sys.stderr)
-        if args.strict:
-            return 1
+        upsert_reports(history_path, reports, args.basis, generated_at)
     return 0
+
+
+def _atomic_write_text(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary: Path | None = None
+    try:
+        with NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            dir=path.parent,
+            prefix=f".{path.name}.",
+            delete=False,
+        ) as handle:
+            handle.write(content)
+            temporary = Path(handle.name)
+        os.replace(temporary, path)
+    except Exception:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+        raise
 
 
 def main() -> None:
     args = parse_args()
-    if args.command == "report":
-        raise SystemExit(run_report(args))
+    try:
+        if args.command == "report":
+            raise SystemExit(run_report(args))
+    except (OSError, SourceUnavailable, ValueError) as error:
+        print(f"ERROR: {error}", file=sys.stderr)
+        raise SystemExit(1) from None
 
 
 if __name__ == "__main__":
