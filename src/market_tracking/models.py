@@ -27,11 +27,20 @@ class TickerReport:
     ticker: str
     source: str
     source_url: str
+    # Calendar Friday identifying the reporting week.
     week_ending: date
+    # Actual final trading session used for the weekly close.
+    close_date: date
     data_time: datetime
     close_price: float
+    # Range selected by ``range_basis`` and used for drawdown.
     fifty_two_week_low: float
     fifty_two_week_high: float
+    fifty_two_week_close_low: float
+    fifty_two_week_close_high: float
+    fifty_two_week_intraday_low: float
+    fifty_two_week_intraday_high: float
+    range_basis: str
     previous_week_close_date: date
     previous_week_close_price: float
     drawdown: float

@@ -14,6 +14,24 @@ def week_over_week(current_price: float, previous_week_price: float) -> float:
     return current_price / previous_week_price - 1
 
 
+def validate_window_coverage(
+    bars: list[DailyBar],
+    as_of: date,
+    window_days: int = FIFTY_TWO_WEEK_DAYS,
+) -> None:
+    """Reject a range calculation when the source did not cover its full window."""
+    eligible = [bar for bar in bars if bar.date <= as_of]
+    if not eligible:
+        raise ValueError(f"No bars are available on or before {as_of}.")
+    required_start = as_of - timedelta(days=window_days)
+    earliest = min(bar.date for bar in eligible)
+    if earliest > required_start:
+        raise ValueError(
+            f"Incomplete {window_days}-day history ending {as_of}: "
+            f"earliest bar is {earliest}, required coverage starts {required_start}."
+        )
+
+
 def fifty_two_week_range(
     bars: list[DailyBar],
     as_of: date,

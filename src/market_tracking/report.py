@@ -4,7 +4,12 @@ from datetime import date, datetime
 
 from market_tracking.calendar import select_weekly_closes
 from market_tracking.config import FIFTY_TWO_WEEK_BASIS, SOURCE_NAME, source_url
-from market_tracking.metrics import drawdown, fifty_two_week_range, week_over_week
+from market_tracking.metrics import (
+    drawdown,
+    fifty_two_week_range,
+    validate_window_coverage,
+    week_over_week,
+)
 from market_tracking.models import DailyBar, TickerReport, ValidationReport
 
 
@@ -16,17 +21,33 @@ def build_ticker_report(
     data_time: datetime | None = None,
 ) -> TickerReport:
     current, previous = select_weekly_closes(bars, week_ending)
-    low, high = fifty_two_week_range(bars, current.date, basis=basis)
+    validate_window_coverage(bars, current.date)
+    close_low, close_high = fifty_two_week_range(bars, current.date, basis="close")
+    intraday_low, intraday_high = fifty_two_week_range(
+        bars, current.date, basis="intraday"
+    )
+    if basis == "close":
+        low, high = close_low, close_high
+    elif basis == "intraday":
+        low, high = intraday_low, intraday_high
+    else:
+        raise ValueError(f"Unknown 52-week basis: {basis!r}.")
 
     return TickerReport(
         ticker=ticker.upper(),
         source=SOURCE_NAME,
         source_url=source_url(ticker),
-        week_ending=current.date,
+        week_ending=week_ending,
+        close_date=current.date,
         data_time=data_time if data_time and data_time.date() == current.date else current.timestamp,
         close_price=current.close,
         fifty_two_week_low=low,
         fifty_two_week_high=high,
+        fifty_two_week_close_low=close_low,
+        fifty_two_week_close_high=close_high,
+        fifty_two_week_intraday_low=intraday_low,
+        fifty_two_week_intraday_high=intraday_high,
+        range_basis=basis,
         previous_week_close_date=previous.date,
         previous_week_close_price=previous.close,
         drawdown=drawdown(current.close, high),
@@ -58,21 +79,26 @@ def render_report(
                 f"Source URL: {report.source_url}",
                 "",
                 f"Week ending: {report.week_ending.isoformat()}",
+                f"Close date: {report.close_date.isoformat()}",
                 f"Data time: {report.data_time.isoformat()}",
                 "",
                 f"Close price: {report.close_price:.2f}",
                 "",
-                f"52-week low: {report.fifty_two_week_low:.2f}",
-                f"52-week high: {report.fifty_two_week_high:.2f}",
                 (
-                    "52-week range: "
-                    f"{report.fifty_two_week_low:.2f} - {report.fifty_two_week_high:.2f}"
+                    "52-week range (Yahoo/intraday): "
+                    f"{report.fifty_two_week_intraday_low:.2f} - "
+                    f"{report.fifty_two_week_intraday_high:.2f}"
+                ),
+                (
+                    "52-week closing range: "
+                    f"{report.fifty_two_week_close_low:.2f} - "
+                    f"{report.fifty_two_week_close_high:.2f}"
                 ),
                 "",
                 f"Previous week close date: {report.previous_week_close_date.isoformat()}",
                 f"Previous week close price: {report.previous_week_close_price:.2f}",
                 "",
-                f"DD: {report.drawdown:.2%}",
+                f"DD ({report.range_basis} 52-week high): {report.drawdown:.2%}",
                 f"WoW: {report.week_over_week:.2%}",
                 "",
             ]

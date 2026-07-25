@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import time
-from datetime import datetime, time as dtime
+from datetime import date, datetime, time as dtime, timedelta
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -20,7 +20,7 @@ _CLOSE_HOUR = dtime(16, 0)
 def _get(url: str, attempts: int = 3, timeout: int = 20) -> dict:
     last_error: Exception | None = None
     for attempt in range(attempts):
-        request = Request(url, headers={"User-Agent": "market-tracking/0.1"})
+        request = Request(url, headers={"User-Agent": "market-tracking/0.2"})
         try:
             with urlopen(request, timeout=timeout) as response:
                 return json.loads(response.read().decode("utf-8"))
@@ -31,8 +31,24 @@ def _get(url: str, attempts: int = 3, timeout: int = 20) -> dict:
     raise SourceUnavailable(f"Yahoo request failed for {url}: {last_error}") from last_error
 
 
-def fetch_market_data(ticker: str, range_: str = "14mo") -> MarketData:
-    params = urlencode({"range": range_, "interval": "1d", "includePrePost": "false"})
+def fetch_market_data(
+    ticker: str,
+    range_: str = "14mo",
+    *,
+    as_of: date | None = None,
+) -> MarketData:
+    if as_of is None:
+        query = {"range": range_}
+    else:
+        # Include extra sessions before the 365-day window so coverage can be
+        # proved even when its first calendar day is a weekend or holiday.
+        start = as_of - timedelta(days=375)
+        end = as_of + timedelta(days=1)
+        query = {
+            "period1": int(datetime.combine(start, dtime.min, TIMEZONE).timestamp()),
+            "period2": int(datetime.combine(end, dtime.min, TIMEZONE).timestamp()),
+        }
+    params = urlencode({**query, "interval": "1d", "includePrePost": "false"})
     path = f"/v8/finance/chart/{ticker.upper()}?{params}"
 
     payload: dict | None = None
