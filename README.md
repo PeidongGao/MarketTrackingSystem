@@ -89,7 +89,9 @@ re-checks those values and records a **Data Validation** section per ticker:
 - **Reporting week** confirms the run resolved to the requested week.
 - **History continuity** confirms this week's previous-week close equals the
   close stored for that week on a prior run — a self-check that strengthens
-  over time as `reports/history.csv` grows.
+  over time as `reports/history.csv` grows. If the latest stored close predates
+  the previous week, the report records an advisory history gap so a missed run
+  does not block later reports. Conflicting closes for the same date still fail.
 
 `--strict` turns any `mismatch` into a non-zero exit so CI fails loudly. Strict
 validation happens before report or history files are replaced, and each file is

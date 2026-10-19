@@ -175,20 +175,31 @@ def cross_validate_ticker(
             )
         )
 
-    # --- History continuity: last run's close must equal this run's prev close.
+    # --- Compare stored and fetched closes only when they refer to the same week.
+    # A missed report leaves a history gap, not a conflicting price.
     if history_prev_close is not None:
         prev_date, prev_value = history_prev_close
         ok_date = prev_date == primary_report.previous_week_close_date
         ok_value = _agree([prev_value, primary_report.previous_week_close_price], tolerance)
+        status = "confirmed" if (ok_date and ok_value) else "mismatch"
+        detail = f"stored week {prev_date} vs report prev {primary_report.previous_week_close_date}"
+        values = {
+            "stored_prev_close": prev_value,
+            "report_prev_close": primary_report.previous_week_close_price,
+        }
+        if prev_date < primary_report.previous_week_close_date:
+            status = "advisory"
+            detail = (
+                f"history gap: latest stored close {prev_date}; no stored close for "
+                f"report prev {primary_report.previous_week_close_date}"
+            )
+            values = {}
         checks.append(
             FieldCheck(
                 "history continuity",
-                {
-                    "stored_prev_close": prev_value,
-                    "report_prev_close": primary_report.previous_week_close_price,
-                },
-                "confirmed" if (ok_date and ok_value) else "mismatch",
-                f"stored week {prev_date} vs report prev {primary_report.previous_week_close_date}",
+                values,
+                status,
+                detail,
             )
         )
     else:

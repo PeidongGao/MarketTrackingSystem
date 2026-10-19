@@ -68,6 +68,50 @@ class ValidateTest(unittest.TestCase):
         self.assertFalse(validation.ok)
         self.assertEqual(self._check(validation, "history continuity").status, "mismatch")
 
+    def test_history_gap_is_advisory(self) -> None:
+        per_source = {"yahoo": MarketData(bars(100, 110), source="yahoo")}
+        validation = cross_validate_ticker(
+            self._report(),
+            date(2026, 6, 26),
+            per_source,
+            basis="close",
+            history_prev_close=(date(2026, 6, 12), 120.0),
+        )
+
+        check = self._check(validation, "history continuity")
+        self.assertTrue(validation.ok)
+        self.assertEqual(check.status, "advisory")
+        self.assertIn("history gap", check.detail)
+        self.assertIn("2026-06-12", check.detail)
+        self.assertIn("2026-06-18", check.detail)
+        self.assertEqual(check.values, {})
+
+    def test_matching_history_close_is_confirmed(self) -> None:
+        per_source = {"yahoo": MarketData(bars(100, 110), source="yahoo")}
+        validation = cross_validate_ticker(
+            self._report(),
+            date(2026, 6, 26),
+            per_source,
+            basis="close",
+            history_prev_close=(date(2026, 6, 18), 100.0),
+        )
+
+        self.assertTrue(validation.ok)
+        self.assertEqual(self._check(validation, "history continuity").status, "confirmed")
+
+    def test_history_date_after_previous_close_is_mismatch(self) -> None:
+        per_source = {"yahoo": MarketData(bars(100, 110), source="yahoo")}
+        validation = cross_validate_ticker(
+            self._report(),
+            date(2026, 6, 26),
+            per_source,
+            basis="close",
+            history_prev_close=(date(2026, 6, 19), 100.0),
+        )
+
+        self.assertFalse(validation.ok)
+        self.assertEqual(self._check(validation, "history continuity").status, "mismatch")
+
     def test_yahoo_metadata_used_for_range_advisory_even_if_not_first_source(self) -> None:
         per_source = {
             "audit": MarketData(bars(100, 110), source="audit"),

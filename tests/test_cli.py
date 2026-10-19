@@ -8,6 +8,7 @@ import unittest
 from unittest.mock import patch
 
 from market_tracking.cli import run_report
+from market_tracking.history import load_history
 from market_tracking.models import (
     DailyBar,
     FieldCheck,
@@ -68,6 +69,29 @@ def arguments(tmp: Path, **overrides) -> Namespace:
 
 
 class CliTest(unittest.TestCase):
+    def test_strict_report_recovers_after_missed_week(self) -> None:
+        after_gap = market_data(date(2026, 7, 3))
+        after_gap.bars.insert(
+            -1,
+            DailyBar(date(2026, 6, 26), 105, 110, 100, datetime(2026, 6, 26, 16)),
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            tmp = Path(directory)
+            with patch(
+                "market_tracking.cli.fetch_market_data",
+                side_effect=[market_data(), after_gap],
+            ), redirect_stdout(StringIO()):
+                first = run_report(arguments(tmp, week_ending=date(2026, 6, 12)))
+                recovered = run_report(arguments(tmp, week_ending=date(2026, 7, 3)))
+
+            self.assertEqual(first, 0)
+            self.assertEqual(recovered, 0)
+            self.assertIn("history gap", (tmp / "report.md").read_text())
+            self.assertEqual(
+                [row["week_ending"] for row in load_history(tmp / "history.csv")],
+                ["2026-06-12", "2026-07-03"],
+            )
+
     def test_strict_mismatch_writes_neither_report_nor_history(self) -> None:
         mismatch = ValidationReport(
             "VOO", [FieldCheck("52-week high (intraday)", {}, "mismatch")]
