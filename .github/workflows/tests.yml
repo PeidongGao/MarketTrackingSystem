@@ -16,3 +16,9 @@ jobs:
         run: python -m pip install -e .
       - name: Run tests
         run: PYTHONPATH=src python -m unittest discover -s tests -v
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "26"
+      - name: Test dashboard range and export behavior
+        run: node --test tests/dashboard.test.cjs
