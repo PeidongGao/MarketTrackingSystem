@@ -23,3 +23,6 @@ market-tracking = "market_tracking.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+market_tracking = ["web/*"]

@@ -1,0 +1,72 @@
+.market-explorer {
+  --me-bg: #fff; --me-text: #263c4c; --me-muted: #637582; --me-border: #dce5eb; --me-tint: #f4f8fb; --me-accent: #226a9c;
+  box-sizing: border-box; width: 100%; min-width: 0; padding: 22px; margin: 20px 0 28px;
+  background: var(--me-bg); color: var(--me-text); border: 1px solid var(--me-border); border-radius: 12px;
+  font-family: system-ui, -apple-system, sans-serif; font-size: 14px; line-height: 1.5;
+}
+[data-theme="dark"] .market-explorer { --me-bg: #182231; --me-text: #dbe3ec; --me-muted: #a5b2c1; --me-border: #334256; --me-tint: #202e40; --me-accent: #8bc6ef; color-scheme: dark; }
+.market-explorer *, .market-explorer *::before, .market-explorer *::after { box-sizing: border-box; }
+.market-explorer [hidden] { display: none !important; }
+.market-explorer button, .market-explorer input { font: inherit; }
+.market-explorer button { cursor: pointer; border: 1px solid var(--me-border); border-radius: 6px; padding: 8px 12px; background: var(--me-bg); color: var(--me-text); line-height: 1.3; box-shadow: none; text-transform: none; letter-spacing: 0; margin: 0; }
+.market-explorer button:hover { border-color: var(--me-accent); background: var(--me-tint); }
+.market-explorer button:disabled { cursor: default; opacity: .5; }
+.market-explorer :focus-visible { outline: 3px solid var(--me-accent); outline-offset: 3px; }
+.market-explorer p { margin: 0; font-size: inherit !important; }
+.me-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+.me-eyebrow { color: var(--me-accent); font: 600 10px/1.4 ui-monospace, monospace; letter-spacing: .13em; }
+.market-explorer .me-range { font-size: 13px !important; font-weight: 500; margin-top: 6px; }
+.market-explorer .me-quiet { font-size: 12px; background: transparent; padding: 7px 9px; white-space: nowrap; }
+.me-presets { display: flex; gap: 5px; margin-bottom: 16px; }
+.market-explorer .me-presets button { min-width: 42px; font-weight: 600; font-size: 12px; padding: 7px 10px; }
+.market-explorer .me-presets button[aria-pressed="true"] { background: var(--me-accent); color: var(--me-bg); border-color: var(--me-accent); }
+.me-dates { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; margin: 0 0 20px; }
+.me-dates label { display: grid; gap: 5px; color: var(--me-muted); font-size: 11px; font-weight: 500; margin: 0; }
+.me-dates input { display: block; width: 154px; min-width: 0; height: 37px; padding: 6px 8px; border: 1px solid var(--me-border); border-radius: 6px; color: var(--me-text); background: var(--me-bg); }
+.me-date-separator { align-self: end; line-height: 37px; color: var(--me-muted); }
+.market-explorer .me-dates button { height: 37px; font-size: 12px; color: var(--me-accent); font-weight: 600; }
+.me-etfs { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 0 0 16px; border: 0; }
+.me-etfs legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.me-etfs label { display: inline-flex; align-items: center; gap: 7px; padding: 7px 9px; border: 1px solid var(--me-border); border-radius: 7px; cursor: pointer; font-size: 12px; margin: 0; }
+.me-etfs input { width: 14px; height: 14px; margin: 0; accent-color: var(--me-accent); }
+.me-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.me-etf-name { color: var(--me-muted); font-size: 10px; }
+.market-explorer .me-observation { font-size: 11px !important; color: var(--me-muted); margin: 0 0 8px; }
+.me-cards { display: flex; gap: 10px; margin-bottom: 12px; }
+.me-card { flex: 1; min-width: 0; border: 1px solid var(--me-border); border-top: 3px solid var(--series-color); border-radius: 7px; padding: 10px 12px; background: var(--me-tint); }
+.me-card > strong { font: 600 12px/1.5 ui-monospace, monospace; }
+.me-card dl { margin: 8px 0 0; display: grid; gap: 7px; }
+.me-card dt { font-size: 10px; color: var(--me-muted); font-weight: 400; margin: 0; }
+.me-card dd { font-variant-numeric: tabular-nums; font-size: 16px; font-weight: 600; margin: 0; }
+.me-chart { width: 100%; height: 560px; }
+.market-explorer .me-help { color: var(--me-muted); font-size: 11px !important; margin: 8px 0 14px; }
+.market-explorer .me-message { background: var(--me-tint); border-left: 3px solid var(--me-accent); padding: 12px; margin: 12px 0; font-size: 13px !important; }
+.me-bottom { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding-top: 12px; border-top: 1px solid var(--me-border); color: var(--me-muted); font-size: 10px; }
+.me-bottom > div { display: flex; gap: 6px; }
+.me-data { margin-top: 16px; border-top: 1px solid var(--me-border); padding-top: 12px; }
+.me-data summary { cursor: pointer; color: var(--me-accent); font-size: 12px; }
+.me-table-wrap { overflow-x: auto; max-height: 340px; margin-top: 12px; }
+.market-explorer table { display: table; border-collapse: collapse; width: 100%; margin: 0; font-size: 11px; }
+.market-explorer th, .market-explorer td { padding: 8px; border-bottom: 1px solid var(--me-border); white-space: nowrap; text-align: right; }
+.market-explorer th:first-child, .market-explorer td:first-child { text-align: left; }
+.market-explorer thead { background: var(--me-tint); position: sticky; top: 0; }
+.me-static { margin: 12px 0 24px; font-size: .8em; }
+.me-static > summary { cursor: pointer; color: var(--color-text-muted, #637582); }
+.me-static .wg-market-fingerprint-image { width: 100%; margin-right: 0; }
+@media (max-width: 540px) {
+  .market-explorer { padding: 14px 10px; border-radius: 8px; }
+  .me-top { align-items: start; }
+  .market-explorer .me-range { font-size: 11px !important; }
+  .me-dates { gap: 7px; }
+  .me-dates label { flex: 1; min-width: 110px; }
+  .me-dates input { width: 100%; font-size: 12px; }
+  .me-date-separator { display: none; }
+  .market-explorer .me-dates button { width: 100%; }
+  .me-etfs { gap: 5px; }
+  .me-etfs label { gap: 5px; padding: 7px; }
+  .me-etf-name { display: none; }
+  .me-cards { gap: 6px; }
+  .me-card { padding: 8px; }
+  .me-card dt { font-size: 8px; }
+  .me-card dd { font-size: 14px; }
+}

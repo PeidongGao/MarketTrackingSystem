@@ -59,6 +59,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Exit non-zero if any validation check is a mismatch.",
     )
+    dashboard = subparsers.add_parser("dashboard", help="Export an offline interactive weekly dashboard.")
+    dashboard.add_argument("--history", type=Path, default=HISTORY_PATH)
+    dashboard.add_argument("--output", type=Path, help="HTML output (default: dashboard.html beside history).")
+    dashboard.add_argument("--web-assets-dir", type=Path, help="Also export the shared static website component.")
     return parser.parse_args(argv)
 
 
@@ -166,6 +170,12 @@ def main() -> None:
     try:
         if args.command == "report":
             raise SystemExit(run_report(args))
+        if args.command == "dashboard":
+            from market_tracking.dashboard import write_dashboard
+            output = args.output or args.history.with_name("dashboard.html")
+            write_dashboard(args.history, output, args.web_assets_dir)
+            print(f"Wrote {output}")
+            raise SystemExit(0)
     except (OSError, SourceUnavailable, ValueError) as error:
         print(f"ERROR: {error}", file=sys.stderr)
         raise SystemExit(1) from None

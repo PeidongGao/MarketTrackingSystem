@@ -43,6 +43,27 @@ Useful flags:
 | `--no-verify` | Skip only the independent second-source cross-check. |
 | `--strict` | Exit non-zero if any validation check is a **mismatch**. |
 
+## Interactive weekly dashboard
+
+Export a self-contained browser panel from an existing history file:
+
+```sh
+market-tracking dashboard --history /path/to/history.csv --output /path/to/dashboard.html
+```
+
+Open the HTML directly; no server, Python plotting dependency or network connection is required. Select any recorded date range, use calendar presets or the linked navigator, compare ETFs, inspect hover/keyboard values, and export the selected CSV or chart. The data table offers the same exact measurements without relying on hover.
+
+This reads existing weekly observations only. A range selection does not fetch daily prices, interpolate new measurements, or recalculate the recorded 52-week drawdown basis. Invalid dates, non-finite values, duplicate observations and incomplete weeks are rejected before replacing an existing panel. Only `week_ending`, `ticker`, `drawdown` and `week_over_week` are embedded; other source columns are excluded.
+
+The same component can be exported for a static website:
+
+```sh
+market-tracking dashboard --history /path/to/history.csv --output /path/to/dashboard.html \
+  --web-assets-dir /path/to/site/assets/market
+```
+
+The website can continue fetching its public weekly CSV, so newly published weeks appear without rebuilding the chart code. See [dashboard integration and sources](docs/interactive-dashboard.md).
+
 ## Metrics
 
 ```text
